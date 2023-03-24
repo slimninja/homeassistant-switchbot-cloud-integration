@@ -1,5 +1,5 @@
 # SETUP:
-# 1. Move this script to /config/scripts/switchbot_control.py
+# 1. Move this script to /config/scripts/switchbot_cloud.py
 # 2. Add 'switchbot_api_token' and 'switchbot_secret_key' to your secrets.yaml
 #    Optional: Define your device id in secrets.yaml, e.g. switchbot_kettle_id and use that to call script
 # 3. Add below config to /config/configuration.yaml (sensor and command example)
@@ -7,7 +7,7 @@
 #  Sensor Setup: https://www.home-assistant.io/integrations/sensor.command_line/#usage-of-json-attributes-in-command-output
 #  - platform: command_line
 #    name: Switchbot Kettle Battery
-#    command: 'python3 scripts/switchbot_control.py status switchbot_kettle_id'
+#    command: 'python3 scripts/switchbot_cloud.py status switchbot_kettle_id'
 #    json_attributes:
 #      - power
 #      - battery
@@ -20,8 +20,8 @@
 #
 #  Command Setup: https://www.home-assistant.io/integrations/shell_command/
 #  shell_command:
-#    switchbot_press_kettle: 'python3 scripts/switchbot_control.py press switchbot_kettle_id'
-#    switchbot_press_espresso_machine: 'python3 scripts/switchbot_control.py press xxxxxxxxxxxx'
+#    switchbot_press_kettle: 'python3 scripts/switchbot_cloud.py press switchbot_kettle_id'
+#    switchbot_press_espresso_machine: 'python3 scripts/switchbot_cloud.py press xxxxxxxxxxxx'
 
 import base64
 import hashlib
