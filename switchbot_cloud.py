@@ -70,7 +70,7 @@ def request(url, data={}, method='GET'):
 
 # Send data to HomeAssistant as pretty printed sysout
 def output(data):
-    formatted = json.dumps(data)
+    formatted = json.dumps(data, indent=2)
     print(formatted)
 
 # Read from secrets.yaml (check if in current directory, or parent directory)
