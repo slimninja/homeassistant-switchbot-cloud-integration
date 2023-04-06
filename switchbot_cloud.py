@@ -31,18 +31,19 @@ import os
 import sys
 import time
 import uuid
-import urllib3
+from http.client import HTTPSConnection
 import yaml
 
-secrets = None
+SECRETS = None
+BASE_URL = 'api.switch-bot.com'
 
 # Helper function for sending requests as HomeAssistant doesnt have the requests module built in
-def request(url, data={}, method='GET'):
+def request(path, data={}, method='GET'):
 
     # Switchbot authentication using secrets.yaml
-    token = secrets.get('switchbot_api_token')
-    secret =  secrets.get('switchbot_secret_key')
-    nonce = uuid.uuid4().hex
+    token = SECRETS.get('switchbot_api_token')
+    secret =  SECRETS.get('switchbot_secret_key')
+    nonce = uuid.uuid4()
 
     t = int(round(time.time() * 1000))
     string_to_sign = '{}{}{}'.format(token, t, nonce)
@@ -51,13 +52,21 @@ def request(url, data={}, method='GET'):
     secret = bytes(secret, 'utf-8')
 
     sign = base64.b64encode(hmac.new(secret, msg=string_to_sign, digestmod=hashlib.sha256).digest())
-    headers = {"Authorization": (str(token)), "t": (str(t)), "sign": (str(sign, 'utf-8')), "nonce": (str(nonce)), "Content-Type": "application/json; charset=utf8"}
 
     encoded_data = json.dumps(data).encode('utf-8')
+    headers = {
+        "Authorization": str(token),
+        "t": str(t),
+        "sign": str(sign, 'utf-8'),
+        "nonce": str(nonce),
+        "Content-Type": "application/json; charset=utf8"
+    }
 
-    http = urllib3.PoolManager()
-    r = http.request(method, url, headers=headers, body=encoded_data)
-    response = json.loads(r.data.decode('utf-8'))
+    conn = HTTPSConnection(BASE_URL)
+    conn.request(method, path, body=encoded_data, headers=headers)
+    resp = conn.getresponse()
+    data = resp.read()
+    response = json.loads(data.decode('utf-8'))
 
     if response['statusCode'] == 190:
         return response['message']
@@ -89,12 +98,11 @@ def get_secrets():
         raise Exception('missing secrets.yaml')
 
     with open(secrets_path, 'r') as file:
-        global secrets
-        secrets = yaml.safe_load(file)
+        global SECRETS
+        SECRETS = yaml.safe_load(file)
 
 def main():
-    # Check arguments passed in from command line
-    args = sys.argv[1:]
+    args = sys.argv[1:] # read args from script call
     if len(args) == 1 and args[0] == 'list': # list requires single arg
         args.append(None)
     elif len(args) != 2:
@@ -104,23 +112,23 @@ def main():
     get_secrets()
 
     if command == 'list':
-        url = f'https://api.switch-bot.com/v1.1/devices'
-        response = request(url)
+        path = f'/v1.1/devices'
+        response = request(path)
         devices = response['deviceList']
         return output(devices)
 
     # Check if secrets.yaml has the key defined (e.g. switchbot_kettle), else use passed-in id
-    device_id = secrets.get(device_id, device_id)
+    device_id = SECRETS.get(device_id, device_id)
 
     if command == 'status':
-        url = f'https://api.switch-bot.com/v1.1/devices/{device_id}/status'
-        response = request(url)
+        path = f'/v1.1/devices/{device_id}/status'
+        response = request(path)
         return output(response)
 
     if command in ['press', 'turnOn', 'turnOff']:
-        url = f'https://api.switch-bot.com/v1.1/devices/{device_id}/commands'
+        path = f'/v1.1/devices/{device_id}/commands'
         data = {"command": command, "commandType": "command"}
-        response = request(url, data, 'POST')
+        response = request(path, data, 'POST')
         return output(response)
 
     raise Exception(f'invalid command specified, "{command}"')
