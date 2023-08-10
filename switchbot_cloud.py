@@ -123,6 +123,11 @@ def main():
     if command == 'status':
         path = f'/v1.1/devices/{device_id}/status'
         response = request(path)
+
+        # If SwitchBot is offline, battery field is not reported. Set default battery to be 0
+        if response.get('deviceType') == 'Bot':
+            response.setdefault('battery', 0)
+
         return output(response)
 
     if command in ['press', 'turnOn', 'turnOff']:
